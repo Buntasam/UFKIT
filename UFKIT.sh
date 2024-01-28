@@ -13,17 +13,17 @@ function show_main_menu() {
 ╚───────────────────────────────────────────────────────────────────────╝
     "
     
-    echo "------------------ Main Menu ------------------"
-    echo "1. OS Updates"
-    echo "2. Tools"
-    echo "3. OSINT Tools"
-    echo "4. VM Tools"
-    echo "5. Packages"
-    echo "6. Networking Tools"
-    echo "7. Security Tools"
-    echo "8. Custom Category"
-    echo "0. Quit"
-    echo "------------------------------------------------"
+    echo "|------------------ Main Menu ------------------|"
+    echo "|  1. OS Updates                                |"
+    echo "|  2. Tools                                     |"
+    echo "|  3. OSINT Tools                               |"
+    echo "|  4. VM Tools                                  |"
+    echo "|  5. Packages                                  |"
+    echo "|  6. Networking Tools                          |"
+    echo "|  7. Security Tools                            |"
+    echo "|  8. Custom Category                           |"
+    echo "|  0. Quit                                      |"     
+    echo "|-----------------------------------------------|"
     echo " "
 }
 
@@ -50,7 +50,7 @@ function tools_menu() {
 
         case $choice_tools in
             0)
-        Sherlock        return ;;
+                return ;;
             1)
                 echo "Executing Cutter commands..."
                 git clone https://github.com/rizinorg/cutter.git ;;
