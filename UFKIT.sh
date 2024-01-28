@@ -50,10 +50,10 @@ function tools_menu() {
 
         case $choice_tools in
             0)
-                return ;;
+        Sherlock        return ;;
             1)
-                echo "Executing Sherlock commands..."
-                git clone https://github.com/sherlock-project/sherlock.git ;;
+                echo "Executing Cutter commands..."
+                git clone https://github.com/rizinorg/cutter.git ;;
             2)
                 echo "Executing Ghidra commands..."
                 git clone https://github.com/NationalSecurityAgency/ghidra.git ;;
@@ -77,7 +77,7 @@ function osint_tools_menu() {
         echo " "
         echo "---------------- OSINT Tools Menu --------------"
         echo "1. Sherlock"
-        echo "2. Tool 2"
+        echo "2. Holehe"
         echo "3. Tool 3"
         echo "0. Back"
         echo "------------------------------------------------"
@@ -89,12 +89,12 @@ function osint_tools_menu() {
             0)
                 return ;;
             1)
-                echo "Executing OSINT Tool 1 commands..."
+                echo "Installing Sherlock ..."
                 git clone https://github.com/sherlock-project/sherlock.git
                 ;;
             2)
-                echo "Executing OSINT Tool 2 commands..."
-                # Add git clone command for OSINT Tool 2
+                echo "Installing holehe ..."
+                git clone https://github.com/megadose/holehe.git
                 ;;
             3)
                 echo "Executing OSINT Tool 3 commands..."
