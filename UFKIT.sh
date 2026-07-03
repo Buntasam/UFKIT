@@ -1,308 +1,138 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# UFKIT — Ultimate Field Kit (launcher)
+# Installateur modulaire d'outils cyber pour tout nouveau poste.
+#
+#   ./UFKIT.sh              menu interactif
+#   ./UFKIT.sh --list       liste catégories & outils
+#   ./UFKIT.sh --starter    installe le starter pack sans menu
+#   ./UFKIT.sh --help       aide
+#
+# Architecture :
+#   lib/core.sh       primitives (couleurs, log, install, registre)
+#   modules/*.sh      une catégorie chacun, s'auto-enregistre
+#
+set -u
 
-function show_main_menu() {
-    echo " 
-    
-╔───────────────────────────────────────────────────────────────────────╗
-│     _/\/\____/\/\__/\/\/\/\/\/\__/\/\____/\/\__/\/\/\/\__/\/\/\/\/\/\_│
-│    _/\/\____/\/\__/\/\__________/\/\__/\/\______/\/\________/\/\_____ │
-│   _/\/\____/\/\__/\/\/\/\/\____/\/\/\/\________/\/\________/\/\_____  │
-│  _/\/\____/\/\__/\/\__________/\/\__/\/\______/\/\________/\/\_____   │
-│ ___/\/\/\/\____/\/\__________/\/\____/\/\__/\/\/\/\______/\/\_____    │
-│__________________________________________________________________     │
-╚───────────────────────────────────────────────────────────────────────╝
-    "
-    
-    echo "|------------------ Main Menu ------------------|"
-    echo "|  1. OS Updates                                |"
-    echo "|  2. Tools                                     |"
-    echo "|  3. OSINT Tools                               |"
-    echo "|  4. VM Tools                                  |"
-    echo "|  5. Packages                                  |"
-    echo "|  6. Networking Tools                          |"
-    echo "|  7. Security Tools                            |"
-    echo "|  8. Custom Category                           |"
-    echo "|  0. Quit                                      |"     
-    echo "|-----------------------------------------------|"
-    echo " "
+# Racine du projet (marche même via symlink / autre cwd)
+UFKIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ----------------------------------------------------------------------------
+# Chargement
+# ----------------------------------------------------------------------------
+if [[ ! -f "$UFKIT_ROOT/lib/core.sh" ]]; then
+    echo "Erreur : lib/core.sh introuvable dans $UFKIT_ROOT" >&2
+    exit 1
+fi
+# shellcheck source=lib/core.sh
+source "$UFKIT_ROOT/lib/core.sh"
+
+load_modules() {
+    local m
+    for m in "$UFKIT_ROOT"/modules/*.sh; do
+        [[ -f "$m" ]] || continue
+        # shellcheck disable=SC1090
+        source "$m"
+    done
 }
 
-function os_updates() {
-    echo " "
-    echo "Executing OS Updates..."
-    sudo apt update && sudo apt upgrade
+# ----------------------------------------------------------------------------
+# Starter pack : sélection transversale d'essentiels
+# ----------------------------------------------------------------------------
+starter_pack() {
+    step "Starter pack — base indispensable pour un nouveau poste"
+    ensure_base; ensure_python
+    i_git; i_vscode; i_claude       # environnement de dev
+    i_utils; i_build
+    i_nmap; i_wireshark; i_netcat
+    i_sherlock; i_sqlmap
+    i_seclists
+    ok "Starter pack terminé."
 }
 
-function tools_menu() {
+# ----------------------------------------------------------------------------
+# Menu principal (construit depuis le registre)
+# ----------------------------------------------------------------------------
+main_menu() {
     while true; do
-        echo " "
-        echo "------------------ Tools Menu -----------------"
-        echo "1. Sherlock"
-        echo "2. Ghidra"
-        echo "3. VS Code"
-        echo "4. Virt Manager"
-        echo "5. MaxP."
-        echo "0. Back"
-        echo "------------------------------------------------"
-        echo " "
+        show_banner
+        printf '\n %s┌──────────────── Menu Principal ────────────────┐%s\n' "$C_BOLD" "$C_RESET"
+        local i
+        for i in "${!CAT_TITLES[@]}"; do
+            printf ' │  %s%2d.%s %-42s│\n' "$C_GREEN" $((i+1)) "$C_RESET" "${CAT_TITLES[$i]}"
+        done
+        printf ' │  %sS.%s %s%-42s%s│\n' "$C_CYAN" "$C_RESET" "$C_BOLD" "Starter pack (essentiel)" "$C_RESET"
+        printf ' │  %s0.%s %-42s│\n' "$C_RED" "$C_RESET" "Quitter"
+        printf ' %s└─────────────────────────────────────────────────┘%s\n' "$C_BOLD" "$C_RESET"
 
-        read -p "Your choice : " choice_tools
-
-        case $choice_tools in
-            0)
-                return ;;
-            1)
-                echo "Executing Cutter commands..."
-                git clone https://github.com/rizinorg/cutter.git ;;
-            2)
-                echo "Executing Ghidra commands..."
-                git clone https://github.com/NationalSecurityAgency/ghidra.git ;;
-            3)
-                echo "Executing VS Code commands..."
-                git clone https://github.com/microsoft/vscode.git ;;
-            4)
-                echo "Executing NOTHING commands..."
-                sudo apt update ;;
-            5)
-                echo "Executing MaxP commands..."
-                git clone https://github.com/KasRoudra/MaxPhisher.git ;;
+        read -rp $'\nTon choix : ' choice
+        case "$choice" in
+            0)        ok "À bientôt !"; exit 0 ;;
+            [Ss])     starter_pack; pause ;;
+            ''|*[!0-9]*) warn "Choix invalide."; sleep 1 ;;
             *)
-                echo "Invalid choice. Please choose again." ;;
+                if (( choice >= 1 && choice <= ${#CAT_FUNCS[@]} )); then
+                    "${CAT_FUNCS[$((choice-1))]}"
+                else
+                    warn "Choix invalide."; sleep 1
+                fi ;;
         esac
     done
 }
 
-function osint_tools_menu() {
-    while true; do
-        echo " "
-        echo "---------------- OSINT Tools Menu --------------"
-        echo "1. Sherlock"
-        echo "2. Holehe"
-        echo "3. Tool 3"
-        echo "0. Back"
-        echo "------------------------------------------------"
-        echo " "
-
-        read -p "Your choice : " choice_osint
-
-        case $choice_osint in
-            0)
-                return ;;
-            1)
-                echo "Installing Sherlock ..."
-                git clone https://github.com/sherlock-project/sherlock.git
-                ;;
-            2)
-                echo "Installing holehe ..."
-                git clone https://github.com/megadose/holehe.git
-                ;;
-            3)
-                echo "Executing OSINT Tool 3 commands..."
-                # Add git clone command for OSINT Tool 3
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
+# ----------------------------------------------------------------------------
+# Modes non-interactifs
+# ----------------------------------------------------------------------------
+cmd_list() {
+    printf '%sCatégories UFKIT :%s\n' "$C_BOLD" "$C_RESET"
+    local i
+    for i in "${!CAT_TITLES[@]}"; do
+        printf '  %2d. %s\n' $((i+1)) "${CAT_TITLES[$i]}"
     done
+    printf '\nOutils déclarés (fonctions i_*) :\n'
+    declare -F | awk '{print $3}' | grep '^i_' | sed 's/^i_/  - /' | sort
 }
 
-function vm_tools_menu() {
-    while true; do
-        echo " "
-        echo "------------------ VM Tools Menu ---------------"
-        echo "1. Virt Manager"
-        echo "2. Tool 2"
-        echo "3. Tool 3"
-        echo "0. Back"
-        echo "------------------------------------------------"
-        echo " "
+usage() {
+    cat <<EOF
+UFKIT v$UFKIT_VERSION — Ultimate Field Kit (installateur modulaire)
 
-        read -p "Your choice : " choice_vm
+Usage : $0 [option]
 
-        case $choice_vm in
-            0)
-                return ;;
-            1)
-                echo "Executing virt-manager commands..."
-                sudo apt install virt-manager
-                ;;
-            2)
-                echo "Executing VM Tool 2 commands..."
-                # Add git clone command for VM Tool 2
-                ;;
-            3)
-                echo "Executing VM Tool 3 commands..."
-                # Add git clone command for VM Tool 3
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
-    done
+  (aucun)     Menu interactif
+  --list      Liste catégories et outils
+  --starter   Installe le starter pack sans menu
+  --help      Cette aide
+
+Variables d'environnement :
+  UFKIT_TOOLS_DIR   Dossier des clones git (défaut: \$HOME/ufkit-tools)
+  UFKIT_LOG         Fichier de log (défaut: \$HOME/ufkit-install.log)
+
+Ajouter un outil   : édite le module concerné dans modules/, ajoute une
+                     fonction i_xxx() et une ligne dans son submenu.
+Ajouter une catégorie : crée modules/NN-nom.sh avec une fonction menu_xxx
+                     et un appel register_category "Titre" menu_xxx.
+
+Astuce : lance avec sudo pour les paquets système.
+EOF
 }
 
-function packages_menu() {
-    while true; do
-        echo " "
-        echo "------------------ Packages Menu ---------------"
-        echo "1. Net-tools"
-        echo "2. Package 2"
-        echo "3. Package 3"
-        echo "0. Back"
-        echo "------------------------------------------------"
-        echo " "
+# ----------------------------------------------------------------------------
+# Entrée
+# ----------------------------------------------------------------------------
+main() {
+    : > "$LOG_FILE" 2>/dev/null || true
+    log INFO "UFKIT $UFKIT_VERSION démarré"
+    detect_platform
+    load_modules
 
-        read -p "Your choice : " choice_packages
-
-        case $choice_packages in
-            0)
-                return ;;
-            1)
-                echo "Start installing net-tools..."
-		sudo apt install net-tools
-                ;;
-            2)
-                echo "Executing Package 2 commands..."
-                # Add git clone command for Package 2
-                ;;
-            3)
-                echo "Executing Package 3 commands..."
-                # Add git clone command for Package 3
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
-    done
-}
-
-function networking_tools_menu() {
-    while true; do
-        echo " "
-        echo "--------------- Networking Tools Menu ------------"
-        echo "1. Wireshark"
-        echo "2. Nmap"
-        echo "3. Tcpdump"
-        echo "0. Back"
-        echo "--------------------------------------------------"
-        echo " "
-
-        read -p "Your choice : " choice_networking
-
-        case $choice_networking in
-            0)
-                return ;;
-            1)
-                echo "Start installing Wireshark..."
-		sudo apt install wireshark
-                ;;
-            2)
-                echo "Start installing Nmap..."
-		sudo apt install nmap
-                ;;
-            3)
-                echo "Start installing Tcpdump..."
-		sudo apt install tcpdump
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
-    done
-}
-
-function security_tools_menu() {
-    while true; do
-        echo " "
-        echo "--------------- Security Tools Menu --------------"
-        echo "1. John the Ripper"
-        echo "2. Aircrack-ng"
-        echo "3. Metasploit"
-        echo "0. Back"
-        echo "--------------------------------------------------"
-        echo " "
-
-        read -p "Your choice : " choice_security
-
-        case $choice_security in
-            0)
-                return ;;
-            1)
-                echo "Start installing John the Ripper..."
-		sudo apt install john
-                ;;
-            2)
-                echo "Start installing Aircrack-ng..."
-		sudo apt install aircrack-ng
-                ;;
-            3)
-                echo "Start installing Metasploit..."
-		sudo apt install metasploit-framework
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
-    done
-}
-
-function custom_category_menu() {
-    while true; do
-        echo " "
-        echo "-------------- Custom Category Menu --------------"
-        echo "1. Custom Tool 1"
-        echo "2. Custom Tool 2"
-        echo "3. Custom Tool 3"
-        echo "0. Back"
-        echo "--------------------------------------------------"
-        echo " "
-
-        read -p "Your choice : " choice_custom
-
-        case $choice_custom in
-            0)
-                return ;;
-            1)
-                echo "Executing Custom Tool 1 commands..."
-                # Add git clone command for Custom Tool 1
-                ;;
-            2)
-                echo "Executing Custom Tool 2 commands..."
-                # Add git clone command for Custom Tool 2
-                ;;
-            3)
-                echo "Executing Custom Tool 3 commands..."
-                # Add git clone command for Custom Tool 3
-                ;;
-            *)
-                echo "Invalid choice. Please choose again." ;;
-        esac
-    done
-}
-
-while true; do
-    show_main_menu
-
-    read -p "Your choice : " choice_main
-
-    case $choice_main in
-        0)
-            echo "Goodbye!"
-            exit ;;
-        1)
-            os_updates ;;
-        2)
-            tools_menu ;;
-        3)
-            osint_tools_menu ;;
-        4)
-            vm_tools_menu ;;
-        5)
-            packages_menu ;;
-        6)
-            networking_tools_menu ;;
-        7)
-            security_tools_menu ;;
-        8)
-            custom_category_menu ;;
-        *)
-            echo "Invalid choice. Please choose again." ;;
+    case "${1:-}" in
+        --help|-h)  usage ;;
+        --list|-l)  cmd_list ;;
+        --starter)  ensure_base; starter_pack ;;
+        "")         ensure_base; main_menu ;;
+        *)          err "Option inconnue : $1"; usage; exit 1 ;;
     esac
-done
+}
 
+main "$@"
