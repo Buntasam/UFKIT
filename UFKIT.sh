@@ -3,10 +3,11 @@
 # UFKIT — Ultimate Field Kit (launcher)
 # Installateur modulaire d'outils cyber pour tout nouveau poste.
 #
-#   ./UFKIT.sh              menu interactif
-#   ./UFKIT.sh --list       liste catégories & outils
-#   ./UFKIT.sh --starter    installe le starter pack sans menu
-#   ./UFKIT.sh --help       aide
+#   ./UFKIT.sh                     menu interactif
+#   ./UFKIT.sh --list              liste catégories & outils
+#   ./UFKIT.sh --starter           installe le starter pack sans menu
+#   ./UFKIT.sh --install nmap ffuf installe des outils précis par leur nom
+#   ./UFKIT.sh --help              aide
 #
 # Architecture :
 #   lib/core.sh       primitives (couleurs, log, install, registre)
@@ -83,14 +84,47 @@ main_menu() {
 # ----------------------------------------------------------------------------
 # Modes non-interactifs
 # ----------------------------------------------------------------------------
+# Liste les noms d'outils installables (fonctions i_*), sans le préfixe.
+tool_names() {
+    declare -F | awk '{print $3}' | grep '^i_' | sed 's/^i_//' | sort -u
+}
+
 cmd_list() {
     printf '%sCatégories UFKIT :%s\n' "$C_BOLD" "$C_RESET"
     local i
     for i in "${!CAT_TITLES[@]}"; do
         printf '  %2d. %s\n' $((i+1)) "${CAT_TITLES[$i]}"
     done
-    printf '\nOutils déclarés (fonctions i_*) :\n'
-    declare -F | awk '{print $3}' | grep '^i_' | sed 's/^i_/  - /' | sort
+    printf '\nOutils installables (utilisables avec %s--install%s) :\n' "$C_BOLD" "$C_RESET"
+    tool_names | sed 's/^/  - /'
+}
+
+# Installe un ou plusieurs outils par nom : ./UFKIT.sh --install nmap ffuf trivy
+# Accepte "nmap" comme "i_nmap". Continue sur erreur et résume à la fin.
+cmd_install() {
+    if (( $# == 0 )); then
+        err "Aucun outil précisé. Exemple : $0 --install nmap ffuf trivy"
+        printf 'Liste des outils disponibles : %s --list\n' "$0" >&2
+        exit 1
+    fi
+    ensure_base
+    local name fn tool failed=0
+    for name in "$@"; do
+        tool="${name#i_}"          # tolère "nmap" ou "i_nmap"
+        fn="i_${tool}"
+        if declare -F "$fn" >/dev/null 2>&1; then
+            step "Installation : $tool"
+            "$fn" || failed=1
+        else
+            err "Outil inconnu : $tool (voir : $0 --list)"
+            failed=1
+        fi
+    done
+    if (( failed )); then
+        warn "Certains outils ont échoué ou sont inconnus (voir $LOG_FILE)."
+        return 1
+    fi
+    ok "Installation(s) terminée(s)."
 }
 
 usage() {
@@ -99,10 +133,15 @@ UFKIT v$UFKIT_VERSION — Ultimate Field Kit (installateur modulaire)
 
 Usage : $0 [option]
 
-  (aucun)     Menu interactif
-  --list      Liste catégories et outils
-  --starter   Installe le starter pack sans menu
-  --help      Cette aide
+  (aucun)            Menu interactif
+  --list             Liste catégories et outils
+  --starter          Installe le starter pack sans menu
+  --install T [T…]   Installe un ou plusieurs outils par leur nom
+  --help             Cette aide
+
+Exemples :
+  $0 --install nmap ffuf trivy
+  $0 --list                       # pour connaître les noms d'outils valides
 
 Variables d'environnement :
   UFKIT_TOOLS_DIR   Dossier des clones git (défaut: \$HOME/ufkit-tools)
@@ -127,11 +166,12 @@ main() {
     load_modules
 
     case "${1:-}" in
-        --help|-h)  usage ;;
-        --list|-l)  cmd_list ;;
-        --starter)  ensure_base; starter_pack ;;
-        "")         ensure_base; main_menu ;;
-        *)          err "Option inconnue : $1"; usage; exit 1 ;;
+        --help|-h)     usage ;;
+        --list|-l)     cmd_list ;;
+        --starter)     ensure_base; starter_pack ;;
+        --install|-i)  shift; cmd_install "$@" ;;
+        "")            ensure_base; main_menu ;;
+        *)             err "Option inconnue : $1"; usage; exit 1 ;;
     esac
 }
 

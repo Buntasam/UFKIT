@@ -37,11 +37,26 @@ sudo ./UFKIT.sh
 ## Utilisation
 
 ```bash
-./UFKIT.sh              # menu interactif
-./UFKIT.sh --list       # liste toutes les catégories et outils
-./UFKIT.sh --starter    # installe le "starter pack" sans passer par le menu
-./UFKIT.sh --help       # aide
+./UFKIT.sh                       # menu interactif
+./UFKIT.sh --list                # liste toutes les catégories et outils
+./UFKIT.sh --starter             # installe le "starter pack" sans passer par le menu
+./UFKIT.sh --install nmap ffuf   # installe des outils précis par leur nom
+./UFKIT.sh --help                # aide
 ```
+
+### Installer des outils par leur nom
+
+Pour scripter le provisionnement d'un poste sans passer par le menu, utilise
+`--install` (ou `-i`) suivi d'un ou plusieurs noms d'outils :
+
+```bash
+./UFKIT.sh --install nmap ffuf trivy sherlock
+```
+
+Les noms acceptés sont ceux affichés par `./UFKIT.sh --list` (le préfixe `i_`
+est optionnel : `nmap` comme `i_nmap`). Les outils inconnus ou en échec sont
+signalés, mais l'installation continue pour les suivants et un résumé s'affiche
+à la fin.
 
 ### Dans le menu
 
