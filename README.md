@@ -34,6 +34,137 @@ sudo ./UFKIT.sh
 
 ---
 
+## Prérequis & dépannage
+
+### Exigences système
+
+| Critère | Minimum | Recommandé |
+|---------|---------|-----------|
+| **Espace disque** | 5 GB libres | 20+ GB (Ghidra, VirtualBox, bases OSINT) |
+| **RAM** | 4 GB | 8+ GB (pour conteneurs, VMs) |
+| **Connexion** | 1 Mbps stable | 10+ Mbps (téléchargements volumineux) |
+| **OS** | Linux 4.4+, macOS 10.12+ | Ubuntu 20.04+, Fedora 32+, macOS 12+ |
+| **Sudo** | (optionnel mais recommandé) | Accès sudoers configuré |
+
+### Distributions testées
+
+✅ **Entièrement supportées :**
+- Ubuntu 20.04 LTS, 22.04 LTS, 24.04 LTS (apt)
+- Debian 11, 12 (apt)
+- Fedora 35+ (dnf)
+- Rocky Linux 8, 9 (dnf)
+- Arch Linux (pacman)
+- openSUSE Leap 15.4+ (zypper)
+- macOS 11+ Monterey (brew)
+
+⚠️ **Compatibilité partielle (outils essentiels OK, certains manquent) :**
+- Alpine Linux (pas de support pacman/apk complet)
+- Kali Linux (spécialisée cyber, beaucoup pré-installés)
+
+❌ **Non supportées :**
+- Windows 10/11 natif (utilise WSL 2 : Ubuntu 20.04+ en subsystème)
+
+### Permissions & groupes spéciaux
+
+Certains outils nécessitent des permissions élevées ou l'adhésion à des groupes :
+
+| Outil | Groupe/Permission | Correction |
+|-------|------------------|-----------|
+| **Docker** | `docker` group | `sudo usermod -aG docker $USER` + redémarrage session |
+| **Wireshark** | `wireshark` group | `sudo usermod -aG wireshark $USER` + redémarrage session |
+| **VirtualBox** | `vboxusers` group | `sudo usermod -aG vboxusers $USER` + redémarrage session |
+| **aircrack-ng** | CAP_NET_ADMIN | Installe avec setcap automatiquement |
+| **bettercap** | CAP_NET_ADMIN | Installe avec setcap automatiquement |
+
+**Après `usermod -aG`, redémarre ta session :** logout + login, ou `newgrp docker`.
+
+### Dépannage courant
+
+#### ❌ `sudo: command not found` ou `Permission denied`
+- **Cause :** Pas root et sudo introuvable
+- **Solution :** `apt install sudo` (ou équivalent), puis ajoute-toi aux sudoers : `su - && usermod -aG sudo $USER`
+
+#### ❌ `Aucun gestionnaire de paquets détecté`
+- **Cause :** Distro inconnue (Alpine, musl, WSL non Ubuntu)
+- **Solution :** Installe manuellement : `apk` (Alpine), `zypper` (openSUSE), ou bascule vers Ubuntu via WSL 2
+
+#### ❌ `npm : command not found` après installation de Claude Code
+- **Cause :** npm global bin non dans PATH
+- **Solution :** 
+  ```bash
+  npm config get prefix  # Affiche le préfixe (ex: /home/user/.npm-global)
+  export PATH="$(npm config get prefix)/bin:$PATH"
+  echo 'export PATH="$(npm config get prefix)/bin:$PATH"' >> ~/.bashrc
+  ```
+- **Puis :** Relance un terminal neuf, `claude --version` devrait fonctionner
+
+#### ❌ `./UFKIT.sh: line XX: /lib/core.sh: No such file or directory`
+- **Cause :** Lancement depuis mauvais répertoire
+- **Solution :** `cd /chemin/vers/ufkit && sudo ./UFKIT.sh`
+
+#### ❌ Erreur paquet : `E: Could not open lock file`
+- **Cause :** apt verrouillé (autre processus, apt-daily, snapd)
+- **Solution :**
+  ```bash
+  sudo killall apt apt-get  # tue les apt en cours
+  sudo rm /var/lib/apt/lists/lock /var/cache/apt/archives/lock /var/lib/dpkg/lock*
+  sudo dpkg --configure -a
+  ```
+- **Puis :** Réessaie
+
+#### ❌ Wireshark : "This could be caused by permissions on a system file"
+- **Cause :** Groupes wireshark/privileges pas appliqués
+- **Solution :**
+  ```bash
+  sudo usermod -aG wireshark $USER
+  newgrp wireshark  # applique immédiatement
+  # Ou logout/login
+  ```
+
+#### ❌ Docker : `Cannot connect to the Docker daemon`
+- **Cause :** Groupe docker pas appliqué ou daemon pas lancé
+- **Solution :**
+  ```bash
+  sudo usermod -aG docker $USER
+  newgrp docker
+  sudo systemctl start docker  # démarre le service
+  docker ps  # vérifie
+  ```
+
+#### ❌ Installation lente ou timeout réseau
+- **Cause :** Connexion faible, miroirs de paquets loin, VPN interfère
+- **Solution :**
+  - Vérifie la connexion : `ping 8.8.8.8`
+  - Désactive le VPN temporairement si actif
+  - Augmente le timeout : `sudo UFKIT_TIMEOUT=300 ./UFKIT.sh`
+  - Réessaie plus tard
+
+### Après installation
+
+#### Configurer git
+```bash
+git config --global user.name "Ton Nom"
+git config --global user.email "ton@email.com"
+```
+
+#### Authentifier Claude Code
+```bash
+claude  # premier lancement = authentification
+```
+
+#### Première utilisation
+```bash
+./UFKIT.sh --list         # voir tous les outils disponibles
+./UFKIT.sh --starter      # installer les essentiels sans menu
+./UFKIT.sh                # menu interactif
+```
+
+#### Mettre à jour les outils
+La plupart des outils s'auto-mettent à jour (`go install`, `cargo install`, `npm -g`, git clones).
+Pour forcer une mise à jour complète : réexécute `./UFKIT.sh --install <tool>`.
+
+---
+
 ## Utilisation
 
 ```bash
