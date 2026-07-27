@@ -2,7 +2,7 @@
 
 Installateur **modulaire** d'outils cyber pour provisionner rapidement tout nouveau
 poste Linux/macOS : reverse, OSINT, réseau, offensif, web, blue team, wordlists,
-virtualisation, mobile — plus un environnement de dev complet (**git, VS Code,
+virtualisation, cloud/DevSecOps, mobile — plus un environnement de dev complet (**git, VS Code,
 Node.js, Claude Code CLI**).
 
 Menu interactif par catégories, installations réelles (pas de simples `git clone`),
@@ -95,8 +95,9 @@ Si la commande `claude` est introuvable, ajoute le préfixe npm global à ton `P
 | 7 | **Web & API** | ffuf, gobuster, nuclei, httpx, katana, dalfox, Nikto, sqlmap, WPScan, WhatWeb, OWASP ZAP |
 | 8 | **Blue team & forensics** | Volatility3, Sleuth Kit, Autopsy, YARA, ClamAV, chkrootkit, rkhunter, Lynis, Wazuh |
 | 9 | **Virtualisation & conteneurs** | virt-manager+KVM, Docker, docker-compose, Vagrant, kubectl |
-| 10 | **Wordlists & ressources** | SecLists, rockyou, paquet wordlists, FuzzDB, PayloadsAllTheThings, Assetnote |
-| 11 | **Mobile & sans-fil** | adb, Frida, objection, MobSF, Reaver, wifite, hcxtools, Kismet |
+| 10 | **Cloud & DevSecOps** | Trivy, Grype, Syft, Kubescape, Checkov, Gitleaks, TruffleHog, Prowler, ScoutSuite |
+| 11 | **Wordlists & ressources** | SecLists, rockyou, paquet wordlists, FuzzDB, PayloadsAllTheThings, Assetnote |
+| 12 | **Mobile & sans-fil** | adb, Frida, objection, MobSF, Reaver, wifite, hcxtools, Kismet |
 
 Liste toujours à jour via `./UFKIT.sh --list`.
 
@@ -118,6 +119,7 @@ modules/
   60-web.sh                 Web & API
   70-blueteam.sh            Blue team & forensics
   80-virt.sh                Virtualisation & conteneurs
+  85-cloud.sh               Cloud & DevSecOps
   90-wordlists.sh           Wordlists & ressources
   95-mobile-wireless.sh     Mobile & sans-fil
 ```
