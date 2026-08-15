@@ -23,7 +23,7 @@ détection automatique de la distribution et gestion des dépendances.
 ## Installation rapide
 
 ```bash
-git clone <ton-repo> ufkit && cd ufkit
+git clone https://github.com/Buntasam/UFKIT.git && cd ufkit
 chmod +x UFKIT.sh
 sudo ./UFKIT.sh
 ```
